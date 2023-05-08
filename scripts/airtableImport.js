@@ -10,27 +10,40 @@ function sanitizeIdentifierForConvex(airtableFieldName) {
   return airtableFieldName.replace(' ', '_').replace(/\W/g, '')
 }
 
-function mapRecordForConvex(airtableRecord) {
+function mapRecordForConvex(airtableRecord, linkedFieldIdByName) {
   const convexRecord = {
     airtableId: airtableRecord.getId(),
-    // TODO perhaps rename any linked record fields with an airtable_ prefix, so we can use the real name for the convex id links?
   }
 
   for (const f in airtableRecord.fields) {
-    convexRecord[sanitizeIdentifierForConvex(f)] = airtableRecord.get(f)
+    const linkedFieldId = linkedFieldIdByName[f];
+    if (linkedFieldId !== undefined) {
+      // for linked fields, create two fields in convex:
+      // The field named by the airtable field ID will hold airtable IDs
+      convexRecord[linkedFieldId] = airtableRecord.get(f)
+      // And create an empty list field with the human-readable name, to be populated with the convex IDs
+      convexRecord[sanitizeIdentifierForConvex(f)] = []
+    } else {
+      convexRecord[sanitizeIdentifierForConvex(f)] = airtableRecord.get(f)
+    }
   }
 
   return convexRecord
 }
 
-async function writeTableData(airtableTableId, convexTableName) {
+async function writeTableData(airtableTableId, convexTableName, linkedFields) {
   const jsonlContents = [];
+
+  const linkedFieldIdByName = {}
+  for (const linkedField of linkedFields) {
+    linkedFieldIdByName[linkedField['name']] = linkedField['id']
+  }
 
   base.table(airtableTableId).select().eachPage(function page(records, fetchNextPage) {
     // This function (`page`) will get called for each page of records.
 
     records.forEach(function(record) {
-      jsonlContents.push(JSON.stringify(mapRecordForConvex(record)));
+      jsonlContents.push(JSON.stringify(mapRecordForConvex(record, linkedFieldIdByName)));
     });
 
     // To fetch the next page of records, call `fetchNextPage`.
@@ -99,11 +112,11 @@ async function airtableImport() {
   await fs.promises.mkdir('./airtableData/tableData', { recursive: true });
   for (const airtableTableId of Object.keys(convexTableNameByAirtableTableId)) {
     const convexTableName = convexTableNameByAirtableTableId[airtableTableId]
-    await writeTableData(airtableTableId, convexTableName)
+    const linkedFields = tableByTableId[airtableTableId]['fields'].filter((field) => field['type'] === 'multipleRecordLinks')
+    await writeTableData(airtableTableId, convexTableName, linkedFields)
     console.log(`npx convex import ${convexTableName} airtableData/tableData/${convexTableName}.jsonl`)
 
     //const tableSchema = convertAirtableSchemaToConvex(table['fields'])
-    const linkedFields = tableByTableId[airtableTableId]['fields'].filter((field) => field['type'] === 'multipleRecordLinks')
     for (const linkField of linkedFields) {
       const targetTableName = convexTableNameByAirtableTableId[linkField['options']['linkedTableId']]
       if (targetTableName !== undefined) {
@@ -132,7 +145,7 @@ airtableImport().then((r) => {
 
 
 - images: actually get them and host them on convex, because airtable I believe now expires those links
-
+- lookup and rollup fields -- after the migration they could be out of date -- potentially don't migrate them at all??
 
 autogenerate the convex schema from the airtable base schema
 - images
