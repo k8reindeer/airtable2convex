@@ -23,10 +23,10 @@ function mapRecordForConvex(airtableRecord) {
   return convexRecord
 }
 
-async function writeTableData(airtableTable) {
+async function writeTableData(airtableTableId, convexTableName) {
   const jsonlContents = [];
 
-  base.table(airtableTable['id']).select().eachPage(function page(records, fetchNextPage) {
+  base.table(airtableTableId).select().eachPage(function page(records, fetchNextPage) {
     // This function (`page`) will get called for each page of records.
 
     records.forEach(function(record) {
@@ -39,16 +39,23 @@ async function writeTableData(airtableTable) {
     fetchNextPage();
 
   }, function done(err) {
-    if (err) { console.error(err); return; }
-    const convexTableName = sanitizeIdentifierForConvex(airtableTable['name'])
-    fs.writeFile(`./airtableData/${convexTableName}.jsonl`, jsonlContents.join('\n'), err => {
-      if (err) { console.error(err); return; }
+    if (err) { console.error(err);}
+    fs.writeFile(`./airtableData/tableData/${convexTableName}.jsonl`, jsonlContents.join('\n'), err => {
+      if (err) { console.error(err);}
     })
   });
 }
 
 
 async function airtableImport() {
+  const tableNamesFilename = './airtableData/tableNames.jsonl';
+  const convexTableNameByAirtableTableId = {}
+  const tableNames = await fs.promises.readFile(tableNamesFilename, 'utf8');
+  for (const tableNaming of tableNames.toString().split('\n')) {
+    const {airtableTableId, convexTableName} = JSON.parse(tableNaming);
+    convexTableNameByAirtableTableId[airtableTableId] = convexTableName
+  }
+
   const metadataResponse = await fetch(`https://api.airtable.com/v0/meta/bases/${BASE_ID}/tables`, {
     headers: new Headers({
       'Authorization': `Bearer ${process.env['AIRTABLE_API_KEY']}`
@@ -58,16 +65,22 @@ async function airtableImport() {
   const data = await metadataResponse.json();
   const tables = data['tables'];
   const linkedFieldData = [];
-  const convexTableNameByTableId = {};
-  const tableNamesByConvexTableNames = {}
+  const convexTableNames = new Set();
+  const tableByTableId = {}
+
   for (const table of tables) {
-    const convexTableName = sanitizeIdentifierForConvex(table['name'])
-    convexTableNameByTableId[table['id']] = convexTableName;
-    if (tableNamesByConvexTableNames[convexTableName]) {
-      console.warn(`Your airtable tables named ${table['name']} and ${tableNamesByConvexTableNames[convexTableName]} will collide in Convex. Please rename and try again`)
+    tableByTableId[table['id']] = table;
+    const convexTableName = convexTableNameByAirtableTableId[table['id']]
+    if (convexTableName === undefined) {
+      // skip the tables the user has removed from ./airtableData/tableNames.jsonl
+      continue
+    }
+
+    if (convexTableNames.has(convexTableName)) {
+      console.warn(`Multiple tables would be named ${convexTableName} in Convex. Please rename in ${tableNamesFilename}`)
       return "Table name collision";
     } else {
-      tableNamesByConvexTableNames[convexTableName] = table['name']
+      convexTableNames.add(convexTableName);
     }
 
     const fieldNamesByConvexFieldNames = {}
@@ -83,22 +96,28 @@ async function airtableImport() {
     }
   }
 
-  await fs.promises.mkdir('./airtableData')
-  for (const table of tables) {
-    await writeTableData(table)
+  await fs.promises.mkdir('./airtableData/tableData', { recursive: true });
+  for (const airtableTableId of Object.keys(convexTableNameByAirtableTableId)) {
+    const convexTableName = convexTableNameByAirtableTableId[airtableTableId]
+    await writeTableData(airtableTableId, convexTableName)
+    console.log(`npx convex import ${convexTableName} airtableData/tableData/${convexTableName}.jsonl`)
 
     //const tableSchema = convertAirtableSchemaToConvex(table['fields'])
-    const linkedFields = table['fields'].filter((field) => field['type'] === 'multipleRecordLinks')
+    const linkedFields = tableByTableId[airtableTableId]['fields'].filter((field) => field['type'] === 'multipleRecordLinks')
     for (const linkField of linkedFields) {
-      linkedFieldData.push({
-        tableName: convexTableNameByTableId[table['id']],
-        fieldId: linkField['id'],
-        fieldName: sanitizeIdentifierForConvex(linkField['name']),
-        targetTableName: convexTableNameByTableId[linkField['options']['linkedTableId']],
-      })
+      const targetTableName = convexTableNameByAirtableTableId[linkField['options']['linkedTableId']]
+      if (targetTableName !== undefined) {
+        // Only include the link field if the source and target tables were included in the convex import
+        linkedFieldData.push({
+          tableName: convexTableName,
+          fieldId: linkField['id'],
+          fieldName: sanitizeIdentifierForConvex(linkField['name']),
+          targetTableName,
+        })
+      }
     }
   }
-  console.log(linkedFieldData)
+  await fs.promises.writeFile(`./airtableData/linkedFields.json`, JSON.stringify(linkedFieldData))
 
   return "Done"
 }
@@ -115,16 +134,24 @@ airtableImport().then((r) => {
 - images: actually get them and host them on convex, because airtable I believe now expires those links
 
 
-- convex can automatically detect a schema and it ain't bad. field types to improve:
+autogenerate the convex schema from the airtable base schema
 - images
 - things that should be enum like single or multiple select
 - linked record ie foreign key fields
 - list of all airtable field types
 
-
-
-ideas:
-- can we autogenerate the convex schema from the airtable base schema? but with more enum stuff
+TABLE renaming strategy:
+- beginAirtableImport.js
+-- generates tableNames.jsonl
+-- user modifies tableNames.jsonl to contain both airtable and convex names (correspondence)
+- airtableImport.js
+-- downloads the airtable data into jsonl
+-- generates the convex import statements for the user to run on the command line with the names they chose
+-- generates the schema for the tables, to add to schema.ts, with the by_airtable_id index
+-- writes linkedFields.json that corresponds airtable table names, convex table names, field names, etc
+- airtableLink.js
+-- reads the linkedFields.json to determine which fields have links
+-- calls the convex mutation to fix up the airtable ids into convex ids
 
 research
 - does convex schema allow validating that options are from an enum? (YES)

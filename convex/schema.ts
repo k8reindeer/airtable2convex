@@ -2,14 +2,14 @@ import { defineSchema, defineTable } from "convex/schema";
 import { v } from "convex/values";
 
 export default defineSchema({
-  Alphabet_groups: defineTable({
+  alphabet_groups: defineTable({
     Dress_IDfromDresses: v.optional(v.array(v.string())),
     Dresses: v.optional(v.array(v.id('Dresses'))),
     Name: v.string(),
     airtableId: v.string(),
   })
     .index("by_airtable_id", ["airtableId"]),
-  Dresses: defineTable({
+  dresses: defineTable({
     Chiffon: v.optional(v.boolean()),
     Disqualified_Reason: v.optional(v.string()),
     Dress_ID: v.string(),
