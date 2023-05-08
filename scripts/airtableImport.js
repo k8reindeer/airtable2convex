@@ -153,18 +153,6 @@ autogenerate the convex schema from the airtable base schema
 - linked record ie foreign key fields
 - list of all airtable field types
 
-TABLE renaming strategy:
-- beginAirtableImport.js
--- generates tableNames.jsonl
--- user modifies tableNames.jsonl to contain both airtable and convex names (correspondence)
-- airtableImport.js
--- downloads the airtable data into jsonl
--- generates the convex import statements for the user to run on the command line with the names they chose
--- generates the schema for the tables, to add to schema.ts, with the by_airtable_id index
--- writes linkedFields.json that corresponds airtable table names, convex table names, field names, etc
-- airtableLink.js
--- reads the linkedFields.json to determine which fields have links
--- calls the convex mutation to fix up the airtable ids into convex ids
 
 research
 - does convex schema allow validating that options are from an enum? (YES)
