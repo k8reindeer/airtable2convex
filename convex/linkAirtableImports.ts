@@ -13,14 +13,14 @@ export default mutation(async ({db}, {linkedFields}: {linkedFields: LinkedFieldD
   // - gather all the target tables for each link field and make sure each is indexed on the airtableId column
   console.log(linkedFields)
   for (const {tableName, fieldId, fieldName, targetTableName} of linkedFields) {{
-    // TODO let this be an async iterator
-    const records = await db.query(tableName).collect();
-    for (const record of records) {
-      // TODO validate that this is a list of strings...
+    let count = 0
+    let migrated = 0
+    for await (const record of db.query(tableName)) {
+      count += 1;
       const airtableIds = record[fieldId];
-      if (airtableIds) {
+      if (airtableIds && Array.isArray(airtableIds)) {
         const convexIds = []
-        for (const airtableId of airtableIds as unknown as string[]) {
+        for (const airtableId of airtableIds) {
           // look up the convex record in targetTableName with this airtableId
 
           // TODO make sure the target table is indexed on the airtable id
@@ -30,10 +30,10 @@ export default mutation(async ({db}, {linkedFields}: {linkedFields: LinkedFieldD
           } // TODO warn if not found
         }
         await db.patch(record._id, {[fieldName]: convexIds})
+        migrated += 1;
       }
-
     }
-    console.log(`Migrated ${records.length} records in ${tableName}`);
+    console.log(`Migrated ${migrated} records (of ${count}) in ${tableName}`);
   }}
 
 })
