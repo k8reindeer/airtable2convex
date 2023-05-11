@@ -7,7 +7,7 @@ const base = require('airtable').base(BASE_ID);
 
 function sanitizeIdentifierForConvex(airtableFieldName) {
   // Identifiers can only contain alphanumeric characters or underscores
-  return airtableFieldName.replace(' ', '_').replace(/\W/g, '')
+  return airtableFieldName.replaceAll(' ', '_').replace(/\W/g, '')
 }
 
 function mapRecordForConvex(airtableRecord, linkedFieldIdByName) {
@@ -60,6 +60,85 @@ async function writeTableData(airtableTableId, convexTableName, linkedFields) {
 }
 
 
+function generateTableSchema(fields, convexTableNameByAirtableTableId) {
+  const convexSchemaByFieldName = {}
+  for (const f of fields) {
+    const fieldName = sanitizeIdentifierForConvex(f['name'])
+
+    switch(f['type']) { // TODO optionals everywhere I think
+      case 'singleLineText':
+      case 'multilineText':
+      case 'richText':
+      case 'url':
+      case 'date':
+      case 'dateTime':
+      case 'email':
+      case 'phoneNumber':
+        convexSchemaByFieldName[fieldName] = 'v.string()';
+        break;
+      case 'currency':
+      case 'number':
+      case 'duration':
+      case 'percent':
+      case 'rating':
+        convexSchemaByFieldName[fieldName] = 'v.number()';
+        break;
+      case 'checkbox':
+        convexSchemaByFieldName[fieldName] = 'v.boolean()';
+        break;
+      case 'multipleRecordLinks':
+        convexSchemaByFieldName[fieldName] = 'v.array(v.string())';
+        const targetTableName = convexTableNameByAirtableTableId[f['options']['linkedTableId']]
+        convexSchemaByFieldName[f['id']] = `v.array(v.id('${targetTableName}'))`;
+        break;
+        // - things that should be enum like single or multiple select
+        // - images
+      case 'singleSelect':
+        const options =
+        convexSchemaByFieldName[fieldName] = `v.union(
+${f['options']['choices'].map(({name}) => `      v.literal("${name}"),`).join('\n')}
+    )`;
+        break;
+      case 'multipleSelects':
+        convexSchemaByFieldName[fieldName] = `v.array(v.union(
+${f['options']['choices'].map(({name}) => `      v.literal("${name}"),`).join('\n')}
+    ))`;
+        break;
+      default:
+        convexSchemaByFieldName[fieldName] = 'v.any()'
+    }
+  }
+  return convexSchemaByFieldName
+}
+
+function formatTableSchema(tableName, schemasByFieldName) {
+  const fieldSchemas = []
+  for (const fieldName of Object.keys(schemasByFieldName)) {
+    // Optionals everywhere since we're not interpreting the data here to see if every value is populated
+    fieldSchemas.push(`    ${fieldName}: v.optional(${schemasByFieldName[fieldName]}),`)
+  }
+  return `  ${tableName}: defineTable({
+    airtableId: v.string(),
+${fieldSchemas.join('\n')}
+  }).index("by_airtable_id", ["airtableId"]),`
+}
+
+async function writeSchemaFile(schemasByTableName) {
+  const tableSchemas = []
+  for (const tableName of Object.keys(schemasByTableName)) {
+    tableSchemas.push(formatTableSchema(tableName, schemasByTableName[tableName]))
+  }
+  const schemaCode = `import { defineSchema, defineTable } from "convex/schema";
+import { v } from "convex/values";
+
+export default defineSchema({
+${tableSchemas.join('\n')}
+});`
+  // TODO hmm do I want to overwrite the existing schema at schema.ts? maybe save it somewhere?
+  await fs.promises.writeFile(`./convex/schema1.ts`, schemaCode)
+
+}
+
 async function airtableImport() {
   const tableNamesFilename = './airtableData/tableNames.jsonl';
   const convexTableNameByAirtableTableId = {}
@@ -109,14 +188,17 @@ async function airtableImport() {
     }
   }
 
+  const schemasByTableName = {};
+
   await fs.promises.mkdir('./airtableData/tableData', { recursive: true });
   for (const airtableTableId of Object.keys(convexTableNameByAirtableTableId)) {
     const convexTableName = convexTableNameByAirtableTableId[airtableTableId]
-    const linkedFields = tableByTableId[airtableTableId]['fields'].filter((field) => field['type'] === 'multipleRecordLinks')
+    const allFields = tableByTableId[airtableTableId]['fields']
+    const linkedFields = allFields.filter((field) => field['type'] === 'multipleRecordLinks')
     await writeTableData(airtableTableId, convexTableName, linkedFields)
     console.log(`npx convex import ${convexTableName} airtableData/tableData/${convexTableName}.jsonl`)
 
-    //const tableSchema = convertAirtableSchemaToConvex(table['fields'])
+    schemasByTableName[convexTableName] = generateTableSchema(allFields, convexTableNameByAirtableTableId)
     for (const linkField of linkedFields) {
       const targetTableName = convexTableNameByAirtableTableId[linkField['options']['linkedTableId']]
       if (targetTableName !== undefined) {
@@ -131,6 +213,7 @@ async function airtableImport() {
     }
   }
   await fs.promises.writeFile(`./airtableData/linkedFields.json`, JSON.stringify(linkedFieldData))
+  await writeSchemaFile(schemasByTableName);
 
   return "Done"
 }
@@ -140,32 +223,63 @@ airtableImport().then((r) => {
 })
 
 /*
-//
+// TODO upgrate to 0.14 oops
+
 - batching. airtable is every 100 by default; convex can take up to ~8k at a time. do this via files.
 
 
 - images: actually get them and host them on convex, because airtable I believe now expires those links
 - lookup and rollup fields -- after the migration they could be out of date -- potentially don't migrate them at all??
 
-autogenerate the convex schema from the airtable base schema
-- images
-- things that should be enum like single or multiple select
-- linked record ie foreign key fields
-- list of all airtable field types
-
-
-research
-- does convex schema allow validating that options are from an enum? (YES)
-validators v: It additionally allows you to define unions, optional property, string literals, and more
-defineTable({
-  oneTwoOrThree: v.union(
-    v.literal("one"),
-    v.literal("two"),
-    v.literal("three")
-  ),
-});
-
 - does convex files support the images the way I hope it does? https://docs.convex.dev/file-storage/store-files
 - make a frontend to show my bridesmaids dresses?
+
+TODO airtable field types:
+
+derived data, and post-migration could quickly get out of date... warn or refuse to migrate these values?
+- multipleLookupValues
+- multipleRecordLinks
+- rollup
+- formula
+- count
+
+will not remain accurate and shouldn't be migrated
+- lastModifiedTime
+- lastModifiedBy
+
+doesn't make sense to want in convex
+- button
+
+
+DONE / convex coded up
+multipleSelects
+singleSelect
+checkbox
+singleLineText
+multilineText
+richText
+currency
+number
+url
+date
+dateTime
+duration
+email
+phoneNumber
+rating
+percent
+
+TODO to code up
+autoNumber
+barcode
+createdBy
+createdTime
+externalSyncSource
+multipleAttachments ie IMAGES!!
+multipleCollaborators
+singleCollaborator
+
+
+
 
 */

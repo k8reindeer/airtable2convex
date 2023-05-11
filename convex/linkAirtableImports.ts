@@ -27,7 +27,9 @@ export default mutation(async ({db}, {linkedFields}: {linkedFields: LinkedFieldD
           const convexRecord = await db.query(targetTableName).withIndex("by_airtable_id", q => q.eq('airtableId', airtableId)).unique();
           if (convexRecord) {
             convexIds.push(convexRecord._id);
-          } // TODO warn if not found
+          } else {
+            console.warn(`Document with airtable ID ${airtableId} not found in ${targetTableName}`)
+          }
         }
         await db.patch(record._id, {[fieldName]: convexIds})
         migrated += 1;

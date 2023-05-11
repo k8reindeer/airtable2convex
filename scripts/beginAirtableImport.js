@@ -15,7 +15,7 @@ async function beginAirtableImport() {
     const jsonlTables = [];
 
     for (const table of tables) {
-        const convexTableName = table['name'].replace(' ', '_').replace(/\W/g, '');
+        const convexTableName = table['name'].replaceAll(' ', '_').replace(/\W/g, '');
         jsonlTables.push(JSON.stringify({
             airtableTableId: table['id'],
             airtableTableName: table['name'],
