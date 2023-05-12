@@ -12,19 +12,19 @@ async function beginAirtableImport() {
 
     const data = await metadataResponse.json();
     const tables = data['tables'];
-    const jsonlTables = [];
+    const jsonTables = [];
 
     for (const table of tables) {
         const convexTableName = table['name'].replaceAll(' ', '_').replace(/\W/g, '');
-        jsonlTables.push(JSON.stringify({
+        jsonTables.push({
             airtableTableId: table['id'],
             airtableTableName: table['name'],
             convexTableName
-        }));
+        });
     }
     await fs.promises.mkdir('./airtableData', { recursive: true })
-    const filename = './airtableData/tableNames.jsonl'
-    await fs.promises.writeFile(filename, jsonlTables.join('\n'));
+    const filename = './airtableData/tableNames.json'
+    await fs.promises.writeFile(filename, JSON.stringify(jsonTables, null, 2));
     return `Done. Edit the table names in ${filename} or remove tables to omit if desired, then run \nnode ./scripts/airtableImport.js`
 }
 

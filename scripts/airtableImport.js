@@ -144,7 +144,7 @@ node scripts/airtableLink.js`)
 }
 
 async function airtableImport() {
-  const tableNamesFilename = './airtableData/tableNames.jsonl';
+  const tableNamesFilename = './airtableData/tableNames.json';
   const convexTableNameByAirtableTableId = {}
   const tableNames = await fs.promises.readFile(tableNamesFilename, 'utf8');
   for (const tableNaming of tableNames.toString().split('\n')) {

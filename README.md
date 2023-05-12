@@ -12,7 +12,7 @@ Open `airtableData/tableNames.jsonl` and remove or rename any of your Airtable t
 
 This will download your Airtable data into `airtableData/tableData/` and print some `npx convex import` statements into your console. Copy and paste those directly so you don't misspell your new table names!
 
-(not implemented yet) also this generates a schema for you to add to `convex/schema.ts` that will give you the needed indexes for the next step
+It also generates a schema at `convex/airtableSchema.ts` for you to incorporate into to `convex/schema.ts`. Merge it with any existing tables manually, then wait for Convex to build the indexes before running
 
 `node scripts/airtableLink.js`
 
