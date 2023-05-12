@@ -87,12 +87,13 @@ function generateTableSchema(fields, convexTableNameByAirtableTableId) {
         convexSchemaByFieldName[fieldName] = 'v.boolean()';
         break;
       case 'multipleRecordLinks':
-        convexSchemaByFieldName[fieldName] = 'v.array(v.string())';
-        const targetTableName = convexTableNameByAirtableTableId[f['options']['linkedTableId']]
-        convexSchemaByFieldName[f['id']] = `v.array(v.id('${targetTableName}'))`;
+        const targetTableName = convexTableNameByAirtableTableId[f['options']['linkedTableId']];
+        // Only import the link field if we're also importing the table it links to
+        if (targetTableName) {
+          convexSchemaByFieldName[f['id']] = `v.array(v.id('${targetTableName}'))`;
+          convexSchemaByFieldName[fieldName] = 'v.array(v.string())';
+        }
         break;
-        // - things that should be enum like single or multiple select
-        // - images
       case 'singleSelect':
         const options =
         convexSchemaByFieldName[fieldName] = `v.union(

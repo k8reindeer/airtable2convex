@@ -19,10 +19,8 @@ export default defineSchema({
     Has_Slit: v.optional(v.boolean()),
     Chiffon: v.optional(v.boolean()),
     Floor_Length: v.optional(v.boolean()),
-    Which_alphabet_group: v.optional(v.array(v.string())),
-    fldz5Jrr1bhzGGWob: v.optional(v.array(v.id('undefined'))),
-    All_Field_Types: v.optional(v.array(v.string())),
     fldKTknu2EnmqIBkM: v.optional(v.array(v.id('All_Field_Types'))),
+    All_Field_Types: v.optional(v.array(v.string())),
   }).index("by_airtable_id", ["airtableId"]),
   All_Field_Types: defineTable({
     airtableId: v.string(),
@@ -42,18 +40,18 @@ export default defineSchema({
       v.literal("Carl"),
       v.literal("Cole"),
     ))),
-    Date: v.optional(v.any()),
-    Phone_number: v.optional(v.any()),
-    Email: v.optional(v.any()),
+    Date: v.optional(v.string()),
+    Phone_number: v.optional(v.string()),
+    Email: v.optional(v.string()),
     URL: v.optional(v.string()),
     Number: v.optional(v.number()),
     Value: v.optional(v.number()),
-    Percent: v.optional(v.any()),
-    Duration: v.optional(v.any()),
-    Rating: v.optional(v.any()),
+    Percent: v.optional(v.number()),
+    Duration: v.optional(v.number()),
+    Rating: v.optional(v.number()),
     Calculation: v.optional(v.any()),
-    Dresses: v.optional(v.array(v.string())),
     fldc74fAToOOqeIci: v.optional(v.array(v.id('Dresses'))),
+    Dresses: v.optional(v.array(v.string())),
     Price_from_Dresses: v.optional(v.any()),
     Price_Rollup_from_Dresses: v.optional(v.any()),
     Count_Dresses: v.optional(v.any()),
@@ -71,4 +69,4 @@ export default defineSchema({
     .index("by_airtable_id", ["airtableId"]),
 
 
-});
+  });

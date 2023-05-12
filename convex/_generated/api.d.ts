@@ -12,6 +12,7 @@
 import type { ApiFromModules } from "convex/api";
 import type * as linkAirtableImports from "../linkAirtableImports";
 import type * as listMessages from "../listMessages";
+import type * as schema1 from "../schema1";
 import type * as sendMessage from "../sendMessage";
 
 /**
@@ -26,5 +27,6 @@ import type * as sendMessage from "../sendMessage";
 export type API = ApiFromModules<{
   linkAirtableImports: typeof linkAirtableImports;
   listMessages: typeof listMessages;
+  schema1: typeof schema1;
   sendMessage: typeof sendMessage;
 }>;
