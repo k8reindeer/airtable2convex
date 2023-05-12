@@ -10,9 +10,9 @@
  */
 
 import type { ApiFromModules } from "convex/api";
+import type * as airtableSchema from "../airtableSchema";
 import type * as linkAirtableImports from "../linkAirtableImports";
 import type * as listMessages from "../listMessages";
-import type * as schema1 from "../schema1";
 import type * as sendMessage from "../sendMessage";
 
 /**
@@ -25,8 +25,8 @@ import type * as sendMessage from "../sendMessage";
  * `ConvexReactClient` to create app-specific types.
  */
 export type API = ApiFromModules<{
+  airtableSchema: typeof airtableSchema;
   linkAirtableImports: typeof linkAirtableImports;
   listMessages: typeof listMessages;
-  schema1: typeof schema1;
   sendMessage: typeof sendMessage;
 }>;

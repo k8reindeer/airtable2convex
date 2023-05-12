@@ -135,8 +135,11 @@ import { v } from "convex/values";
 export default defineSchema({
 ${tableSchemas.join('\n')}
 });`
-  // TODO hmm do I want to overwrite the existing schema at schema.ts? maybe save it somewhere?
-  await fs.promises.writeFile(`./convex/schema1.ts`, schemaCode)
+
+  await fs.promises.writeFile(`./convex/airtableSchema.ts`, schemaCode)
+  console.log(`A suggested convex schema file has been written at convex/airtableSchema.ts
+Review, modify, and incorporate it into your schema.ts, then wait for convex to build the indexes before running
+node scripts/airtableLink.js`)
 
 }
 
@@ -224,7 +227,6 @@ airtableImport().then((r) => {
 })
 
 /*
-// TODO upgrate to 0.14 oops
 
 - batching. airtable is every 100 by default; convex can take up to ~8k at a time. do this via files.
 
@@ -279,8 +281,5 @@ externalSyncSource
 multipleAttachments ie IMAGES!!
 multipleCollaborators
 singleCollaborator
-
-
-
 
 */
