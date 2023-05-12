@@ -95,7 +95,6 @@ function generateTableSchema(fields, convexTableNameByAirtableTableId) {
         }
         break;
       case 'singleSelect':
-        const options =
         convexSchemaByFieldName[fieldName] = `v.union(
 ${f['options']['choices'].map(({name}) => `      v.literal("${name}"),`).join('\n')}
     )`;
