@@ -1,4 +1,4 @@
-# Airatble -> Convex
+# Airtable -> Convex
 
 The scripts and convex functions in this example convex app demonstrate a way to migrate your data from Airtable to Convex
 
