@@ -13,7 +13,7 @@ Grab the base ID from airtable (find it in the URL of your base -- an 18 charact
 
 `node scripts/beginAirtableImport.js [your-base-id]`
 
-Open `airtableData/tableNames.jsonl` and remove or rename any of your Airtable tables so you can give them a different name in Convex.
+Open `airtableData/naming.json` and remove or rename any of your Airtable tables so you can give them a different name in Convex.
 
 `node scripts/airtableImport.js`
 

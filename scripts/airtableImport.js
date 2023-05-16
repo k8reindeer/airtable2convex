@@ -2,45 +2,34 @@ const fs = require('fs');
 require("dotenv").config({ path: ".env.local" });
 
 
-function sanitizeIdentifierForConvex(airtableFieldName) {
-  // Identifiers can only contain alphanumeric characters or underscores
-  return airtableFieldName.replaceAll(' ', '_').replace(/\W/g, '')
-}
-
-function mapRecordForConvex(airtableRecord, linkedFieldIdByName) {
+function mapRecordForConvex(airtableRecord, convexFieldNameByAirtableFieldId, linkedFieldIdsToInclude) {
   const convexRecord = {
     airtableId: airtableRecord.getId(),
   }
 
-  for (const f in airtableRecord.fields) {
-    const linkedFieldId = linkedFieldIdByName[f];
-    if (linkedFieldId !== undefined) {
+  for (const airtableFieldId of Object.keys(convexFieldNameByAirtableFieldId)) {
+    const convexFieldName = convexFieldNameByAirtableFieldId[airtableFieldId];
+    if (linkedFieldIdsToInclude.includes(airtableFieldId)) {
       // for linked fields, create two fields in convex:
       // The field named by the airtable field ID will hold airtable IDs
-      convexRecord[linkedFieldId] = airtableRecord.get(f)
-      // And create an empty list field with the human-readable name, to be populated with the convex IDs
-      convexRecord[sanitizeIdentifierForConvex(f)] = []
+      convexRecord[airtableFieldId] = airtableRecord.get(airtableFieldId)
+      // And create an empty list field in the convex field name, to be populated with the convex IDs
+      convexRecord[convexFieldName] = []
     } else {
-      convexRecord[sanitizeIdentifierForConvex(f)] = airtableRecord.get(f)
+      convexRecord[convexFieldName] = airtableRecord.get(airtableFieldId);
     }
   }
-
   return convexRecord
 }
 
-async function writeTableData(base, airtableTableId, convexTableName, linkedFieldsToInclude) {
+async function writeTableData(base, airtableTableId, convexTableName, convexFieldNameByAirtableFieldId, linkedFieldIdsToInclude) {
   const jsonlContents = [];
 
-  const linkedFieldIdByName = {}
-  for (const linkedField of linkedFieldsToInclude) {
-    linkedFieldIdByName[linkedField['name']] = linkedField['id']
-  }
-
-  base.table(airtableTableId).select().eachPage(function page(records, fetchNextPage) {
+  base.table(airtableTableId).select({returnFieldsByFieldId: true}).eachPage(function page(records, fetchNextPage) {
     // This function (`page`) will get called for each page of records.
 
     records.forEach(function(record) {
-      jsonlContents.push(JSON.stringify(mapRecordForConvex(record, linkedFieldIdByName)));
+      jsonlContents.push(JSON.stringify(mapRecordForConvex(record, convexFieldNameByAirtableFieldId, linkedFieldIdsToInclude)));
     });
 
     // To fetch the next page of records, call `fetchNextPage`.
@@ -57,10 +46,14 @@ async function writeTableData(base, airtableTableId, convexTableName, linkedFiel
 }
 
 
-function generateTableSchema(fields, convexTableNameByAirtableTableId) {
+function generateTableSchema(fields, convexFieldNameByAirtableFieldId, convexTableNameByAirtableTableId) {
   const convexSchemaByFieldName = {}
   for (const f of fields) {
-    const fieldName = sanitizeIdentifierForConvex(f['name'])
+    const fieldName = convexFieldNameByAirtableFieldId[f['id']]
+    if (fieldName === undefined) {
+      // If the user excluded a field from naming.json, don't include it in the schema either
+      continue
+    }
 
     switch(f['type']) {
       case 'singleLineText':
@@ -142,12 +135,31 @@ node scripts/airtableLink.js`)
 }
 
 async function airtableImport() {
-  const tableNamesFilename = './airtableData/tableNames.json';
+  const tableNamesFilename = './airtableData/naming.json';
   const convexTableNameByAirtableTableId = {}
+  const convexFieldNameByAirtableFieldIdByAirtableTableId = {}
   const tableNames = await fs.promises.readFile(tableNamesFilename, 'utf8');
   const {baseId, tables: jsonTables} = JSON.parse(tableNames.toString())
-  for (const {airtableTableId, convexTableName} of jsonTables) {
+  const allConvexTableNames = new Set();
+  for (const {airtableTableId, convexTableName, fields} of jsonTables) {
+    if (allConvexTableNames.has(convexTableName)) {
+      console.warn(`Multiple tables would be named ${convexTableName} in Convex. Please rename in ${tableNamesFilename}`)
+      return "Table name collision";
+    } else {
+      allConvexTableNames.add(convexTableName);
+    }
     convexTableNameByAirtableTableId[airtableTableId] = convexTableName
+    convexFieldNameByAirtableFieldIdByAirtableTableId[airtableTableId] = {}
+    const allConvexFieldNamesForThisTable = new Set()
+    for (const {airtableFieldId, convexFieldName} of fields) {
+      if (allConvexFieldNamesForThisTable.has(convexFieldName)) {
+        console.warn(`Multiple fields would be named ${convexFieldName} (in table: ${convexTableName}) in Convex. Please rename in ${tableNamesFilename}`)
+        return "Field name collision";
+      } else {
+        allConvexFieldNamesForThisTable.add(convexFieldName)
+        convexFieldNameByAirtableFieldIdByAirtableTableId[airtableTableId][airtableFieldId] = convexFieldName;
+      }
+    }
   }
   const base = require('airtable').base(baseId);
 
@@ -160,35 +172,9 @@ async function airtableImport() {
   const data = await metadataResponse.json();
   const tables = data['tables'];
   const linkedFieldsByTable = {};
-  const convexTableNames = new Set();
   const tableByTableId = {}
-
   for (const table of tables) {
     tableByTableId[table['id']] = table;
-    const convexTableName = convexTableNameByAirtableTableId[table['id']]
-    if (convexTableName === undefined) {
-      // skip the tables the user has removed from ./airtableData/tableNames.jsonl
-      continue
-    }
-
-    if (convexTableNames.has(convexTableName)) {
-      console.warn(`Multiple tables would be named ${convexTableName} in Convex. Please rename in ${tableNamesFilename}`)
-      return "Table name collision";
-    } else {
-      convexTableNames.add(convexTableName);
-    }
-
-    const fieldNamesByConvexFieldNames = {}
-    for (const field of table['fields']) {
-      const convexFieldName = sanitizeIdentifierForConvex(field['name'])
-      if (fieldNamesByConvexFieldNames[convexFieldName]) {
-        console.warn(`Your airtable fields named ${field['name']} and ${fieldNamesByConvexFieldNames[convexFieldName]} (table ${table['name']}) will collide in Convex. Please rename and try again`)
-        return "Field name collision";
-      } else {
-        fieldNamesByConvexFieldNames[convexFieldName] = field['name']
-       }
-
-    }
   }
 
   const schemasByTableName = {};
@@ -196,29 +182,38 @@ async function airtableImport() {
   await fs.promises.mkdir('./airtableData/tableData', { recursive: true });
   for (const airtableTableId of Object.keys(convexTableNameByAirtableTableId)) {
     const convexTableName = convexTableNameByAirtableTableId[airtableTableId]
+    const convexFieldNameByAirtableFieldId = convexFieldNameByAirtableFieldIdByAirtableTableId[airtableTableId]
     const allFields = tableByTableId[airtableTableId]['fields']
-    const linkedFieldsToInclude = []
+    const linkedFieldIdsToInclude = []
 
-    schemasByTableName[convexTableName] = generateTableSchema(allFields, convexTableNameByAirtableTableId)
+    schemasByTableName[convexTableName] = generateTableSchema(allFields, convexFieldNameByAirtableFieldId, convexTableNameByAirtableTableId)
     for (const linkField of allFields.filter((field) => field['type'] === 'multipleRecordLinks')) {
-      const targetTableName = convexTableNameByAirtableTableId[linkField['options']['linkedTableId']]
-      if (targetTableName !== undefined) {
-        // Only include the link field if the source and target tables were included in the convex import
-        linkedFieldsToInclude.push(linkField)
-        const linkedFieldData = {
-          airtableIdField: linkField['id'],
-          convexIdField: sanitizeIdentifierForConvex(linkField['name']),
-          targetTableName,
-        }
-        if (linkedFieldsByTable[convexTableName]) {
-          linkedFieldsByTable[convexTableName].push(linkedFieldData)
-        } else {
-          linkedFieldsByTable[convexTableName] = [linkedFieldData]
-        }
+      const convexFieldName = convexFieldNameByAirtableFieldId[linkField['id']]
+      if (convexFieldName === undefined) {
+        // Only schedule the link field for linking if it's actually included in the import
+        continue
       }
+      const targetTableName = convexTableNameByAirtableTableId[linkField['options']['linkedTableId']]
+      if (targetTableName === undefined) {
+        // Only schedule the link field for linking if the target table is also included in the convex import
+        continue
+      }
+
+      linkedFieldIdsToInclude.push(linkField['id'])
+      const linkedFieldData = {
+        airtableIdField: linkField['id'],
+        convexIdField: convexFieldName,
+        targetTableName,
+      }
+      if (linkedFieldsByTable[convexTableName]) {
+        linkedFieldsByTable[convexTableName].push(linkedFieldData)
+      } else {
+        linkedFieldsByTable[convexTableName] = [linkedFieldData]
+      }
+
     }
 
-    await writeTableData(base, airtableTableId, convexTableName, linkedFieldsToInclude)
+    await writeTableData(base, airtableTableId, convexTableName, convexFieldNameByAirtableFieldId, linkedFieldIdsToInclude)
     console.log(`npx convex import ${convexTableName} airtableData/tableData/${convexTableName}.jsonl`)
   }
   await fs.promises.writeFile(`./airtableData/linkedFields.json`, JSON.stringify(linkedFieldsByTable, null, 2))
@@ -233,51 +228,14 @@ airtableImport().then((r) => {
 
 /*
 
-- batching. airtable is every 100 by default; convex can take up to ~8k at a time. do this via files.
 
 
 - images: actually get them and host them on convex, because airtable I believe now expires those links
-- lookup and rollup fields -- after the migration they could be out of date -- potentially don't migrate them at all??
 
 - does convex files support the images the way I hope it does? https://docs.convex.dev/file-storage/store-files
 - make a frontend to show my bridesmaids dresses?
 
-TODO airtable field types:
-
-derived data, and post-migration could quickly get out of date... warn or refuse to migrate these values?
-- multipleLookupValues
-- multipleRecordLinks
-- rollup
-- formula
-- count
-
-will not remain accurate and shouldn't be migrated
-- lastModifiedTime
-- lastModifiedBy
-
-doesn't make sense to want in convex
-- button
-
-
-DONE / convex coded up
-multipleSelects
-singleSelect
-checkbox
-singleLineText
-multilineText
-richText
-currency
-number
-url
-date
-dateTime
-duration
-email
-phoneNumber
-rating
-percent
-
-TODO to code up
+TODO airtable field types to create schema for (or skip):
 autoNumber
 barcode
 createdBy
