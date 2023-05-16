@@ -13,9 +13,8 @@ export default genericMigration({
     if (airtableIds && Array.isArray(airtableIds)) {
       const convexIds = []
       for (const airtableId of airtableIds) {
-        // look up the convex record in targetTableName with this airtableId
 
-        // TODO make sure the target table is indexed on the airtable id
+        // @ts-ignore This will just fail if the target table isn't indexed by airtble id, and the system error message is good enough
         const convexRecord = await db.query(targetTableName).withIndex("by_airtable_id", q => q.eq('airtableId', airtableId)).unique();
         if (convexRecord) {
           convexIds.push(convexRecord._id);
