@@ -128,16 +128,18 @@ async function writeSchemaFile(schemasByTableName) {
   for (const tableName of Object.keys(schemasByTableName)) {
     tableSchemas.push(formatTableSchema(tableName, schemasByTableName[tableName]))
   }
-  const schemaCode = `import { defineSchema, defineTable } from "convex/schema";
+  const schemaCode = `import { defineTable } from "convex/schema";
 import { v } from "convex/values";
 
-export default defineSchema({
+const airtableSchemas = {
 ${tableSchemas.join('\n')}
-});`
+};
+
+export default airtableSchemas;`
 
   await fs.promises.writeFile(`./convex/airtableSchema.ts`, schemaCode)
   console.log(`A suggested convex schema file has been written at convex/airtableSchema.ts
-Review, modify, and incorporate it into your schema.ts, then wait for convex to build the indexes before running
+Review, modify, and import it into your schema.ts, then wait for convex to build the indexes before running
 node scripts/airtableLink.js`)
 
 }
@@ -146,8 +148,7 @@ async function airtableImport() {
   const tableNamesFilename = './airtableData/tableNames.json';
   const convexTableNameByAirtableTableId = {}
   const tableNames = await fs.promises.readFile(tableNamesFilename, 'utf8');
-  for (const tableNaming of tableNames.toString().split('\n')) {
-    const {airtableTableId, convexTableName} = JSON.parse(tableNaming);
+  for (const {airtableTableId, convexTableName} of JSON.parse(tableNames.toString())) {
     convexTableNameByAirtableTableId[airtableTableId] = convexTableName
   }
 
@@ -159,7 +160,7 @@ async function airtableImport() {
 
   const data = await metadataResponse.json();
   const tables = data['tables'];
-  const linkedFieldData = [];
+  const linkedFieldsByTable = {};
   const convexTableNames = new Set();
   const tableByTableId = {}
 
@@ -205,19 +206,23 @@ async function airtableImport() {
       if (targetTableName !== undefined) {
         // Only include the link field if the source and target tables were included in the convex import
         linkedFieldsToInclude.push(linkField)
-        linkedFieldData.push({
-          tableName: convexTableName,
-          fieldId: linkField['id'],
-          fieldName: sanitizeIdentifierForConvex(linkField['name']),
+        const linkedFieldData = {
+          airtableIdField: linkField['id'],
+          convexIdField: sanitizeIdentifierForConvex(linkField['name']),
           targetTableName,
-        })
+        }
+        if (linkedFieldsByTable[convexTableName]) {
+          linkedFieldsByTable[convexTableName].push(linkedFieldData)
+        } else {
+          linkedFieldsByTable[convexTableName] = [linkedFieldData]
+        }
       }
     }
 
     await writeTableData(airtableTableId, convexTableName, linkedFieldsToInclude)
     console.log(`npx convex import ${convexTableName} airtableData/tableData/${convexTableName}.jsonl`)
   }
-  await fs.promises.writeFile(`./airtableData/linkedFields.json`, JSON.stringify(linkedFieldData, null, 2))
+  await fs.promises.writeFile(`./airtableData/linkedFields.json`, JSON.stringify(linkedFieldsByTable, null, 2))
   await writeSchemaFile(schemasByTableName);
 
   return "Done"

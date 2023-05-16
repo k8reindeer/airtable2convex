@@ -4,6 +4,11 @@ The scripts and convex functions in this example convex app demonstrate a way to
 
 ## How to use
 
+First set up Airtable Authentication. Create a Personal Access token [here](https://airtable.com/create/tokens).
+You need scopes `data.records:read` and `schema.bases:read` for the base you want to import to Convex.
+
+`export AIRTABLE_API_KEY=[your token]`
+
 `node scripts/beginAirtableImport.js` 
 
 Open `airtableData/tableNames.jsonl` and remove or rename any of your Airtable tables so you can give them a different name in Convex.
@@ -12,7 +17,7 @@ Open `airtableData/tableNames.jsonl` and remove or rename any of your Airtable t
 
 This will download your Airtable data into `airtableData/tableData/` and print some `npx convex import` statements into your console. Copy and paste those directly so you don't misspell your new table names!
 
-It also generates a schema at `convex/airtableSchema.ts` for you to incorporate into to `convex/schema.ts`. Merge it with any existing tables manually, then wait for Convex to build the indexes before running
+It also generates a schema at `convex/airtableSchema.ts` for you to import into to `convex/schema.ts`. Wait for Convex to build the indexes on your airtable tables before running
 
 `node scripts/airtableLink.js`
 
