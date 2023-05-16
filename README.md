@@ -7,9 +7,11 @@ The scripts and convex functions in this example convex app demonstrate a way to
 First set up Airtable Authentication. Create a Personal Access token [here](https://airtable.com/create/tokens).
 You need scopes `data.records:read` and `schema.bases:read` for the base you want to import to Convex.
 
-`export AIRTABLE_API_KEY=[your token]`
+`export AIRTABLE_API_KEY=[your-token]`
 
-`node scripts/beginAirtableImport.js` 
+Grab the base ID from airtable (find it in the URL of your base -- an 18 character string starting "app")
+
+`node scripts/beginAirtableImport.js [your-base-id]`
 
 Open `airtableData/tableNames.jsonl` and remove or rename any of your Airtable tables so you can give them a different name in Convex.
 

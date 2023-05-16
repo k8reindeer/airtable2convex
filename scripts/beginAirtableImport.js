@@ -1,9 +1,8 @@
 const fs = require('fs');
 require("dotenv").config({ path: ".env.local" });
 
-const BASE_ID = 'appXw3Dbn5Sd6G7mp'
-
 async function beginAirtableImport() {
+    const BASE_ID = process.argv[2];
     const metadataResponse = await fetch(`https://api.airtable.com/v0/meta/bases/${BASE_ID}/tables`, {
         headers: new Headers({
             'Authorization': `Bearer ${process.env['AIRTABLE_API_KEY']}`
@@ -24,7 +23,11 @@ async function beginAirtableImport() {
     }
     await fs.promises.mkdir('./airtableData', { recursive: true })
     const filename = './airtableData/tableNames.json'
-    await fs.promises.writeFile(filename, JSON.stringify(jsonTables, null, 2));
+    const fileContents = {
+        baseId: BASE_ID,
+        tables: jsonTables
+    }
+    await fs.promises.writeFile(filename, JSON.stringify(fileContents, null, 2));
     return `Done. Edit the table names in ${filename} or remove tables to omit if desired, then run \nnode ./scripts/airtableImport.js`
 }
 

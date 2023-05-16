@@ -1,9 +1,6 @@
 const fs = require('fs');
 require("dotenv").config({ path: ".env.local" });
 
-const BASE_ID = 'appXw3Dbn5Sd6G7mp'
-const base = require('airtable').base(BASE_ID);
-
 
 function sanitizeIdentifierForConvex(airtableFieldName) {
   // Identifiers can only contain alphanumeric characters or underscores
@@ -31,7 +28,7 @@ function mapRecordForConvex(airtableRecord, linkedFieldIdByName) {
   return convexRecord
 }
 
-async function writeTableData(airtableTableId, convexTableName, linkedFieldsToInclude) {
+async function writeTableData(base, airtableTableId, convexTableName, linkedFieldsToInclude) {
   const jsonlContents = [];
 
   const linkedFieldIdByName = {}
@@ -148,11 +145,13 @@ async function airtableImport() {
   const tableNamesFilename = './airtableData/tableNames.json';
   const convexTableNameByAirtableTableId = {}
   const tableNames = await fs.promises.readFile(tableNamesFilename, 'utf8');
-  for (const {airtableTableId, convexTableName} of JSON.parse(tableNames.toString())) {
+  const {baseId, tables: jsonTables} = JSON.parse(tableNames.toString())
+  for (const {airtableTableId, convexTableName} of jsonTables) {
     convexTableNameByAirtableTableId[airtableTableId] = convexTableName
   }
+  const base = require('airtable').base(baseId);
 
-  const metadataResponse = await fetch(`https://api.airtable.com/v0/meta/bases/${BASE_ID}/tables`, {
+  const metadataResponse = await fetch(`https://api.airtable.com/v0/meta/bases/${baseId}/tables`, {
     headers: new Headers({
       'Authorization': `Bearer ${process.env['AIRTABLE_API_KEY']}`
     })
@@ -219,7 +218,7 @@ async function airtableImport() {
       }
     }
 
-    await writeTableData(airtableTableId, convexTableName, linkedFieldsToInclude)
+    await writeTableData(base, airtableTableId, convexTableName, linkedFieldsToInclude)
     console.log(`npx convex import ${convexTableName} airtableData/tableData/${convexTableName}.jsonl`)
   }
   await fs.promises.writeFile(`./airtableData/linkedFields.json`, JSON.stringify(linkedFieldsByTable, null, 2))
