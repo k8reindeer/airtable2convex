@@ -94,6 +94,19 @@ ${f['options']['choices'].map(({name}) => `      v.literal("${name}"),`).join('\
 ${f['options']['choices'].map(({name}) => `      v.literal("${name}"),`).join('\n')}
     ))`;
         break;
+      case 'multipleAttachments':
+        convexSchemaByFieldName[fieldName] = `v.array(
+      v.object({
+        filename: v.string(),
+        height: v.number(),
+        id: v.string(),
+        size: v.number(),
+        storageId: v.string(),
+        type: v.string(),
+        width: v.number(),
+      })
+    )`;
+        break;
       default:
         convexSchemaByFieldName[fieldName] = 'v.any()'
     }
@@ -230,9 +243,7 @@ airtableImport().then((r) => {
 
 
 
-- images: actually get them and host them on convex, because airtable I believe now expires those links
 
-- does convex files support the images the way I hope it does? https://docs.convex.dev/file-storage/store-files
 - make a frontend to show my bridesmaids dresses?
 
 TODO airtable field types to create schema for (or skip):
@@ -241,7 +252,6 @@ barcode
 createdBy
 createdTime
 externalSyncSource
-multipleAttachments ie IMAGES!!
 multipleCollaborators
 singleCollaborator
 
