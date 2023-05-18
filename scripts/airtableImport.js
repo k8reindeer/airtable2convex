@@ -180,6 +180,9 @@ async function airtableImport() {
   const schemasByTableName = {};
 
   await fs.promises.mkdir('./airtableData/tableData', { recursive: true });
+  console.log(`Copy and paste these commands to import each table.
+  To replace existing data, pass --replace, to add to existing data use --append.
+  To import the data into the production database, add --prod.`);
   for (const airtableTableId of Object.keys(convexTableNameByAirtableTableId)) {
     const convexTableName = convexTableNameByAirtableTableId[airtableTableId]
     const convexFieldNameByAirtableFieldId = convexFieldNameByAirtableFieldIdByAirtableTableId[airtableTableId]
