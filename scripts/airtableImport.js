@@ -129,8 +129,11 @@ export default airtableSchemas;`
 
   await fs.promises.writeFile(`./convex/airtableSchema.ts`, schemaCode)
   console.log(`A suggested convex schema file has been written at convex/airtableSchema.ts
-Review, modify, and import it into your schema.ts, then wait for convex to build the indexes before running
-node scripts/airtableLink.js`)
+  It may include some fields named after the airtable IDs - keep those there until
+  after this step, as they're important for linking documents together.
+To sync the schema and functions, run "npx convex dev --once" or, for prod, "npx convex deploy".
+Once Convex syncs the schema and indexes, you can link the table references with:
+  node scripts/airtableLink.js`)
 
 }
 
