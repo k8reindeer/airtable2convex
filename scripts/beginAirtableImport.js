@@ -1,7 +1,13 @@
 const fs = require('fs');
 require("dotenv").config({ path: ".env.local" });
 
-// TODO add command line argument to include these anyways
+/*
+These field types are skipped by the import because for one reason or another,
+they rarely make sense to import into Convex. If you really need one of these fields
+feel free to comment it out of this list (and keep in mind you'll need to write the
+Convex functions to keep that data in sync)
+ */
+
 const derivedFieldTypes = [
     // Airtable-computed values that won't stay up to date
     "multipleLookupValues",
@@ -44,7 +50,10 @@ async function beginAirtableImport() {
         const convexTableName = sanitizeIdentifierForConvex(table['name']);
         const fields = [];
         for (const field of table['fields']) {
-            if (!derivedFieldTypes.includes(field['type'])) {
+            if (derivedFieldTypes.includes(field['type'])) {
+                console.log(`Omitting ${field['type']} field ${field['name']} from table ${table['name']} from your import.
+                This field contains derived data that won't necessarily stay up to date in Convex`)
+            } else {
                 const convexFieldName = sanitizeIdentifierForConvex(field['name']);
                 fields.push({
                     airtableFieldId: field['id'],
