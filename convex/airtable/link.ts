@@ -1,5 +1,5 @@
-import {Doc, TableNames} from "./_generated/dataModel";
-import { genericMigration } from "./lib/migrations";
+import {Doc, TableNames} from "../_generated/dataModel";
+import { genericMigration } from "../lib/migrations";
 
 type LinkedFieldData<TableName extends TableNames> = {
   airtableIdField: keyof Doc<TableName>;

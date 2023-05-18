@@ -16,7 +16,7 @@ async function airtableLink() {
             let total = 0;
             console.log(`Linking up ${migrationCtx['convexIdField']} in table ${table}`)
             while (!isDone) {
-                const result = await client.mutation("linkAirtableImports", {table, migrationCtx, cursor, numItems});
+                const result = await client.mutation("airtable/link", {table, migrationCtx, cursor, numItems});
                 total += result.count;
                 ({ isDone, cursor } = result);
             }

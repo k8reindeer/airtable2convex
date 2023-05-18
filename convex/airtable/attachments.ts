@@ -1,11 +1,11 @@
-import {Doc, Id, TableNames } from "./_generated/dataModel";
-import {action, internalMutation, internalQuery, query} from "./_generated/server";
+import {Doc, Id, TableNames } from "../_generated/dataModel";
+import {action, internalMutation, internalQuery, query} from "../_generated/server";
 
 type AttachmentSpecifier<T extends TableNames> = {docId: Id<T>, fieldName: keyof Doc<T>}
 type AttachmentSpecAndValue<T extends TableNames, F extends keyof Doc<T>> = {docId: Id<T>, fieldName: F, newValue: Doc<T>[F]}
 
-export default action(async ({ runMutation, runQuery, storage }, { docId, fieldName }: AttachmentSpecifier<TableNames>) => {
-  const fieldValue = await runQuery("storeAirtableAttachment:read", {docId, fieldName}) as Doc<TableNames>[typeof fieldName];
+export const store = action(async ({ runMutation, runQuery, storage }, { docId, fieldName }: AttachmentSpecifier<TableNames>) => {
+  const fieldValue = await runQuery("airtable/attachments:read", {docId, fieldName}) as Doc<TableNames>[typeof fieldName];
 
   if (fieldValue && Array.isArray(fieldValue)) {
     for (const attachment of fieldValue) {
@@ -31,7 +31,7 @@ export default action(async ({ runMutation, runQuery, storage }, { docId, fieldN
     console.log(`Fetched ${fieldValue.length} attachments for ${docId}`);
   }
 
-  await runMutation("storeAirtableAttachment:update", {docId, fieldName, newValue: fieldValue});
+  await runMutation("airtable/attachments:update", {docId, fieldName, newValue: fieldValue});
 
 });
 

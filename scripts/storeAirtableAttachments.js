@@ -10,10 +10,10 @@ async function storeAirtableAttachments(table, fieldName) {
     let total = 0;
     while (!isDone) {
         // paginated query over the table, filtered for whether the field is set.
-        const result = await client.query("storeAirtableAttachment:listSingly", {table, fieldName, cursor});
+        const result = await client.query("airtable/attachments:listSingly", {table, fieldName, cursor});
         const {docId} = result;
         if (docId) {
-            await client.action("storeAirtableAttachment", {docId, fieldName});
+            await client.action("airtable/attachments:store", {docId, fieldName});
             total += 1;
         }
         ({isDone, cursor} = result);

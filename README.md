@@ -16,8 +16,7 @@ npx convex init
 If you want to import the data into your own repo, copy over:
 - [scripts directory](./scripts/)
 - [convex/lib/migrations.ts](./convex/lib/migrations.ts)
-- [convex/linkAirtableImports.ts](./convex/linkAirtableImports.ts)
-- [convex/storeAirtableAttachment.ts](./convex/storeAirtableAttachment.ts)
+- [convex/airtable directory](./convex/airtable/)
 
 And install some dependencies: `npm i convex airtable dotenv`
 
@@ -83,7 +82,7 @@ which removes the expiring urls, stores the file in Convex and adds the storage 
 ### Cleanup
 
 You can now delete the fields and indexes named for the airtable IDs from your schema.
-You can also delete the "scripts/" folder and "convex/linkAirtableImports.ts".
+You can also delete the "scripts/" and "convex/airtable" folders.
 
 You can further modify your schema and run
 [migrations](https://stack.convex.dev/migrating-data-with-mutations)
