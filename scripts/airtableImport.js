@@ -80,8 +80,8 @@ function generateTableSchema(fields, convexFieldNameByAirtableFieldId, convexTab
         const targetTableName = convexTableNameByAirtableTableId[f['options']['linkedTableId']];
         // Only import the link field if we're also importing the table it links to
         if (targetTableName) {
-          convexSchemaByFieldName[f['id']] = `v.array(v.id('${targetTableName}'))`;
-          convexSchemaByFieldName[fieldName] = 'v.array(v.string())';
+          convexSchemaByFieldName[f['id']] = 'v.array(v.string())';
+          convexSchemaByFieldName[fieldName] = `v.array(v.id('${targetTableName}'))`;
         }
         break;
       case 'singleSelect':
