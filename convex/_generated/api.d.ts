@@ -15,7 +15,7 @@ import type * as lib_migrations from "../lib/migrations";
 import type * as linkAirtableImports from "../linkAirtableImports";
 import type * as listMessages from "../listMessages";
 import type * as sendMessage from "../sendMessage";
-import type * as storeAirtableImage from "../storeAirtableImage";
+import type * as storeAirtableAttachment from "../storeAirtableAttachment";
 
 /**
  * A type describing your app's public Convex API.
@@ -32,5 +32,5 @@ export type API = ApiFromModules<{
   linkAirtableImports: typeof linkAirtableImports;
   listMessages: typeof listMessages;
   sendMessage: typeof sendMessage;
-  storeAirtableImage: typeof storeAirtableImage;
+  storeAirtableAttachment: typeof storeAirtableAttachment;
 }>;

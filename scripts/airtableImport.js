@@ -82,6 +82,9 @@ function generateTableSchema(fields, convexFieldNameByAirtableFieldId, convexTab
         if (targetTableName) {
           convexSchemaByFieldName[f['id']] = 'v.array(v.string())';
           convexSchemaByFieldName[fieldName] = `v.array(v.id('${targetTableName}'))`;
+        } else {
+          // otherwise just include the raw values, by the name the user specified
+          convexSchemaByFieldName[fieldName] = 'v.array(v.string())';
         }
         break;
       case 'singleSelect':
@@ -101,9 +104,11 @@ ${f['options']['choices'].map(({name}) => `      v.literal("${name}"),`).join('\
         height: v.number(),
         id: v.string(),
         size: v.number(),
-        storageId: v.string(),
+        url: v.optional(v.string()),
+        storageId: v.optional(v.string()),
         type: v.string(),
         width: v.number(),
+        thumbnails: v.optional(v.any()),
       })
     )`;
         break;

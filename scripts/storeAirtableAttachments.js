@@ -4,16 +4,16 @@ require("dotenv").config({ path: ".env.local" });
 
 const client = new ConvexHttpClient(process.env["CONVEX_URL"]);
 
-async function storeAirtableImages(table, fieldName) {
+async function storeAirtableAttachments(table, fieldName) {
     let isDone = false;
     let cursor = null;
     let total = 0;
     while (!isDone) {
         // paginated query over the table, filtered for whether the field is set.
-        const result = await client.query("storeAirtableImage:listSingly", {table, fieldName, cursor});
+        const result = await client.query("storeAirtableAttachment:listSingly", {table, fieldName, cursor});
         const {docId} = result;
         if (docId) {
-            await client.action("storeAirtableImage", {docId, fieldName});
+            await client.action("storeAirtableAttachment", {docId, fieldName});
             total += 1;
         }
         ({isDone, cursor} = result);
@@ -22,13 +22,13 @@ async function storeAirtableImages(table, fieldName) {
 
 }
 
-async function storeAllAirtableImages() {
+async function storeAllAirtableAttachments() {
     const attachmentFieldsFilename = './airtableData/attachmentFields.json';
     const attachmentFields = JSON.parse((await fs.promises.readFile(attachmentFieldsFilename)).toString());
 
     for (const {table, field: fieldName} of attachmentFields) {
-        await storeAirtableImages(table, fieldName);
+        await storeAirtableAttachments(table, fieldName);
     }
 }
 
-storeAllAirtableImages();
+storeAllAirtableAttachments();
