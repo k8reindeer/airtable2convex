@@ -22,7 +22,9 @@ export default genericMigration({
           console.warn(`Document with airtable ID ${airtableId} not found in ${targetTableName}`)
         }
       }
-      await db.patch(doc._id, {[convexIdField]: convexIds})
+      delete doc[airtableIdField];
+      doc[convexIdField] = convexIds as any;
+      await db.replace(doc._id, doc);
     }
   }
 })
