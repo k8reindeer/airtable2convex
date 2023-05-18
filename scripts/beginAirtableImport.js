@@ -24,6 +24,11 @@ function sanitizeIdentifierForConvex(airtableFieldName) {
 
 async function beginAirtableImport() {
     const BASE_ID = process.argv[2];
+
+    if (!BASE_ID) {
+        console.log("Provide your base ID (an 18 character string starting with \"app\") as an argument");
+        return;
+    }
     const metadataResponse = await fetch(`https://api.airtable.com/v0/meta/bases/${BASE_ID}/tables`, {
         headers: new Headers({
             'Authorization': `Bearer ${process.env['AIRTABLE_API_KEY']}`

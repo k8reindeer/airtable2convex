@@ -185,6 +185,7 @@ async function airtableImport() {
   const data = await metadataResponse.json();
   const tables = data['tables'];
   const linkedFieldsByTable = {};
+  const attachmentFields = [];
   const tableByTableId = {}
   for (const table of tables) {
     tableByTableId[table['id']] = table;
@@ -223,13 +224,22 @@ async function airtableImport() {
       } else {
         linkedFieldsByTable[convexTableName] = [linkedFieldData]
       }
+    }
 
+    for (const attachmentField of allFields.filter((field) => field['type'] === 'multipleAttachments') ) {
+      const convexFieldName = convexFieldNameByAirtableFieldId[attachmentField['id']]
+      if (convexFieldName === undefined) {
+        // Only schedule the attachment field for storage if it's actually included in the import
+        continue
+      }
+      attachmentFields.push({table: convexTableName, field: convexFieldName})
     }
 
     await writeTableData(base, airtableTableId, convexTableName, convexFieldNameByAirtableFieldId, linkedFieldIdsToInclude)
     console.log(`npx convex import ${convexTableName} airtableData/tableData/${convexTableName}.jsonl`)
   }
   await fs.promises.writeFile(`./airtableData/linkedFields.json`, JSON.stringify(linkedFieldsByTable, null, 2))
+  await fs.promises.writeFile('./airtableData/attachmentFields.json', JSON.stringify(attachmentFields, null, 2))
   await writeSchemaFile(schemasByTableName);
 
   return "Done"
