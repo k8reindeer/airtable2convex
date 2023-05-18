@@ -71,7 +71,7 @@ documents indicated by your linked fields in Airtable.
 
 ### Cleanup
 
-You can now delete the fields named for the airtable IDs from your schema.
+You can now delete the fields and indexes named for the airtable IDs from your schema.
 You can also delete the "scripts/" folder and "convex/linkAirtableImports.ts".
 
 You can further modify your schema and run
