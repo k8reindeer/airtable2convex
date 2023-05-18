@@ -17,6 +17,7 @@ If you want to import the data into your own repo, copy over:
 - [scripts directory](./scripts/)
 - [convex/lib/migrations.ts](./convex/lib/migrations.ts)
 - [convex/linkAirtableImports.ts](./convex/linkAirtableImports.ts)
+- [convex/storeAirtableImage.ts](./convex/storeAirtableimage.ts)
 
 And install some dependencies: `npm i convex airtable dotenv`
 
@@ -68,6 +69,16 @@ node scripts/airtableLink.js
 
 This will modify your Convex database to create foreign keys to the Convex
 documents indicated by your linked fields in Airtable.
+
+### Save attachment files
+
+If you included Airtable attachment fields in your import, the links provided by Airtable
+will [expire](https://support.airtable.com/docs/airtable-attachment-url-behavior) after 2 hours.
+To save those attachments in Convex using [file storage](https://docs.convex.dev/file-storage) use:
+
+`node scripts/storeAirtableImages.js`
+
+which removes the expiring urls, stores the image in Convex and adds the storage id
 
 ### Cleanup
 
