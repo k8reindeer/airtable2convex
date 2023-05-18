@@ -15,6 +15,7 @@ const derivedFieldTypes = [
 
     //doesn't make sense to want in convex
     "button",
+    "externalSyncSource",
 ];
 
 function sanitizeIdentifierForConvex(airtableFieldName) {

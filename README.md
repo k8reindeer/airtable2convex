@@ -86,4 +86,5 @@ You can also delete the "scripts/" and "convex/airtable" folders.
 
 You can further modify your schema and run
 [migrations](https://stack.convex.dev/migrating-data-with-mutations)
-to change any relationships.
+to change any data or relationships -- for example, removing the airtableId
+fields if you no longer need them.

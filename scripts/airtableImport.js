@@ -62,6 +62,7 @@ function generateTableSchema(fields, convexFieldNameByAirtableFieldId, convexTab
       case 'url':
       case 'date':
       case 'dateTime':
+      case 'createdTime':
       case 'email':
       case 'phoneNumber':
         convexSchemaByFieldName[fieldName] = 'v.string()';
@@ -71,6 +72,7 @@ function generateTableSchema(fields, convexFieldNameByAirtableFieldId, convexTab
       case 'duration':
       case 'percent':
       case 'rating':
+      case 'autoNumber':
         convexSchemaByFieldName[fieldName] = 'v.number()';
         break;
       case 'checkbox':
@@ -111,6 +113,27 @@ ${f['options']['choices'].map(({name}) => `      v.literal("${name}"),`).join('\
         thumbnails: v.optional(v.any()),
       })
     )`;
+        break;
+      case 'barcode':
+        convexSchemaByFieldName[fieldName] = `v.object({
+      text: v.string(),
+      type: v.string(),
+    })`
+        break;
+      case 'createdBy':
+      case 'singleCollaborator':
+        convexSchemaByFieldName[fieldName] = `v.object({
+      email: v.string(),
+      id: v.string(),
+      name: v.string(),
+    })`
+        break;
+      case 'multipleCollaborators':
+        convexSchemaByFieldName[fieldName] = `v.array(v.object({
+      email: v.string(),
+      id: v.string(),
+      name: v.string(),
+    }))`
         break;
       default:
         convexSchemaByFieldName[fieldName] = 'v.any()'
@@ -259,21 +282,3 @@ async function airtableImport() {
 airtableImport().then((r) => {
   console.log(r)
 })
-
-/*
-
-
-
-
-- make a frontend to show my bridesmaids dresses?
-
-TODO airtable field types to create schema for (or skip):
-autoNumber
-barcode
-createdBy
-createdTime
-externalSyncSource
-multipleCollaborators
-singleCollaborator
-
-*/

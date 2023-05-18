@@ -24,9 +24,6 @@ async function airtableLink() {
         }
         console.log(`Done linking all ${linkedFieldsByTableName[table].length} fields in ${table}`)
     }
-
-    // TODO give this script the option remove the airtableId field from each table (or you know keep it for posterity)
-
 }
 
 airtableLink().then(console.log)
