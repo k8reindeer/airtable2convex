@@ -22,13 +22,14 @@ And install some dependencies: `npm i convex airtable dotenv`
 
 If your project doesn't use convex yet: `npx convex init`
 
-
-### Export from Airtable
+### Setup
 
 First, set up Airtable Authentication. Create a Personal Access token [here](https://airtable.com/create/tokens).
 You need scopes `data.records:read` and `schema.bases:read` for the base you want to import to Convex.
 
 `export AIRTABLE_API_KEY=[your-token]`
+
+### Map your Airtable Schema to Convex
 
 Grab the base ID from airtable (find it in the URL of your base -- an 18 character string starting with "app")
 
@@ -40,11 +41,10 @@ Don't worry, you can use node 18 to run the import scripts without updating your
 
 Tip: you can use `nvm` to easily switch between node versions.
 
-### Configure name mapping
+Next, open `airtableData/naming.json` and remove or rename any of your Airtable tables or fields so
+you can give them a different name in Convex, or just omit them from the import.
 
-Open `airtableData/naming.json` and remove or rename any of your Airtable tables so you can give them a different name in Convex.
-
-### Import into Convex
+### Move the data over
 
 `node scripts/airtableImport.js`
 

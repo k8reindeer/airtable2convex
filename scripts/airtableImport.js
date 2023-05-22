@@ -169,7 +169,7 @@ ${tableSchemas.join('\n')}
 export default airtableSchemas;`
 
   await fs.promises.writeFile(`./convex/airtableSchema.ts`, schemaCode)
-  console.log(`A suggested convex schema file has been written at convex/airtableSchema.ts
+  console.log(`\nA suggested convex schema file has been written at convex/airtableSchema.ts
   It may include some fields named after the airtable IDs - keep those there until
   after this step, as they're important for linking documents together.
 To sync the schema and functions, run "npx convex dev --once" or, for prod, "npx convex deploy".
@@ -227,7 +227,7 @@ async function airtableImport() {
   await fs.promises.mkdir('./airtableData/tableData', { recursive: true });
   console.log(`Copy and paste these commands to import each table.
   To replace existing data, pass --replace, to add to existing data use --append.
-  To import the data into the production database, add --prod.`);
+  To import the data into the production database, add --prod.\n`);
   for (const airtableTableId of Object.keys(convexTableNameByAirtableTableId)) {
     const convexTableName = convexTableNameByAirtableTableId[airtableTableId]
     const convexFieldNameByAirtableFieldId = convexFieldNameByAirtableFieldIdByAirtableTableId[airtableTableId]
