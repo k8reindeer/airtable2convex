@@ -81,10 +81,21 @@ which removes the expiring urls, stores the file in Convex and adds the storage 
 
 ### Cleanup
 
+If you no longer need to keep track of the Airtable record IDs, you can
+remove them using the migration at `airtable/cleanup:removeAirtableId`.
+Run it from the Convex dashboard with
+```
+{
+    table: "your_table_name"
+    numItems: ...
+    cursor: ...
+}
+```
+as the arguments
+
 You can now delete the fields and indexes named for the airtable IDs from your schema.
 You can also delete the "scripts/" and "convex/airtable" folders.
 
-You can further modify your schema and run
+You can further modify your schema and run further
 [migrations](https://stack.convex.dev/migrating-data-with-mutations)
-to change any data or relationships -- for example, removing the airtableId
-fields if you no longer need them.
+to change any data or relationships

@@ -11,6 +11,7 @@
 
 import type { ApiFromModules } from "convex/api";
 import type * as airtable_attachments from "../airtable/attachments";
+import type * as airtable_cleanup from "../airtable/cleanup";
 import type * as airtable_link from "../airtable/link";
 import type * as airtableSchema from "../airtableSchema";
 import type * as lib_migrations from "../lib/migrations";
@@ -28,6 +29,7 @@ import type * as sendMessage from "../sendMessage";
  */
 export type API = ApiFromModules<{
   "airtable/attachments": typeof airtable_attachments;
+  "airtable/cleanup": typeof airtable_cleanup;
   "airtable/link": typeof airtable_link;
   airtableSchema: typeof airtableSchema;
   "lib/migrations": typeof lib_migrations;

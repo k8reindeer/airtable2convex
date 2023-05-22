@@ -149,7 +149,7 @@ function formatTableSchema(tableName, schemasByFieldName) {
     fieldSchemas.push(`    ${fieldName}: v.optional(${schemasByFieldName[fieldName]}),`)
   }
   return `  ${tableName}: defineTable({
-    airtableId: v.string(),
+    airtableId: v.optional(v.string()),
 ${fieldSchemas.join('\n')}
   }).index("by_airtable_id", ["airtableId"]),`
 }
